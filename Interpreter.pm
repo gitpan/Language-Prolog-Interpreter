@@ -1,6 +1,6 @@
 #! perl -w
 package Language::Prolog::Interpreter;
-our $VERSION = "0.02";
+our $VERSION = "0.021";
 
 =head1 NAME
 
@@ -333,6 +333,7 @@ sub readFile { my ($self,$path)=(shift,shift);
 	# Any character escaped with \ is ignored.
 	#
 	my ($c,$q,$clauses);
+	my @clauses;
 	my $b=0;
 	for (my $i=0; $i<length($file); $i++){
 		my $c = substr($file,$i,1);					# Does this increase speed?
@@ -340,11 +341,15 @@ sub readFile { my ($self,$path)=(shift,shift);
 		if ($c eq "'" ) { $q = not $q }				# Invert quote flag
 		if ($c =~ /^[(\[]$/){ ++$b }				# Stack of open brackets
 		if ($c =~ /^[)\]]$/){ --$b }				# Stack of closed brackets
-		if ($c eq "." and not $q and $b==0) { $c .= "\n" }	# Add \n to .
+		if ($c eq "." and not $q and $b==0) {
+			$clauses .= "$c\n";						# Add \n to .
+			push @clauses,$clauses;
+			next;
+		}
 		$clauses .= $c;								# Store result
 	}
 
-	while ($clauses) {
+	foreach (@clauses) {
 		eval 'Language::Prolog::Interpreter->readStatement(\$file)';
 		$@ && die $@,$file,"\n";
 		$file=~s/^\s*//;
